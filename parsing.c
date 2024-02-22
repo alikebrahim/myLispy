@@ -26,6 +26,7 @@ void add_history(char *unused) {}
 #include <editline/history.h>
 #include <editline/readline.h>
 #endif
+int number_of_nodes(mpc_ast_t *t);
 
 int main(int argc, char **argv) {
   // Parsers
@@ -36,7 +37,7 @@ int main(int argc, char **argv) {
 
   // Parsers definition
   mpca_lang(MPCA_LANG_DEFAULT, "                                    \
-number : /-?[0-9]/ ;                             \
+number : /-?[0-9]+/ ;                             \
 operator : '+' | '-' | '*' | '/' ;               \
 expr : <number> | '(' <operator> <expr>+ ')' ;   \
 lispy : /^/ <operator> <expr>+ /$/ ;             \
@@ -54,6 +55,8 @@ lispy : /^/ <operator> <expr>+ /$/ ;             \
       // On Success print AST
       mpc_ast_print(r.output);
       mpc_ast_delete(r.output);
+      int nodes_num = number_of_nodes(r.output);
+      printf("Number_of_Nodes: %i", nodes_num);
     } else {
       // Otherwise print error
       mpc_err_print(r.output);
@@ -64,5 +67,19 @@ lispy : /^/ <operator> <expr>+ /$/ ;             \
 
   // Delete language
   mpc_cleanup(4, Number, Operator, Expr, Lispy);
+  return 0;
+}
+
+int number_of_nodes(mpc_ast_t *t) {
+  if (t->children_num == 0) {
+    return 1;
+  }
+  if (t->children_num >= 1) {
+    int total = 1;
+    for (int i = 0; i <= t->children_num; i++) {
+      total += number_of_nodes(t->children[i]);
+    }
+    return total;
+  }
   return 0;
 }
