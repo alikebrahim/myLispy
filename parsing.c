@@ -30,6 +30,7 @@ void add_history(char *unused) {}
 // Function prototypes
 int number_of_nodes(mpc_ast_t *t);
 int number_of_leaves(mpc_ast_t *t);
+int number_of_branches(mpc_ast_t *t);
 long eval(mpc_ast_t *t);
 long eval_op(long x, char *op, long y);
 
@@ -58,13 +59,25 @@ lispy : /^/ <operator> <expr>+ /$/ ;             \
     mpc_result_t r;
     if (mpc_parse("<stdin>", input, Lispy, &r)) {
       // On Success print AST
-      mpc_ast_print(r.output);
+      // mpc_ast_print(r.output);
+
+      // Print number of nodes
       // int nodes_num = number_of_nodes(r.output);
       // printf("Number_of_Nodes: %i\n", nodes_num);
+
+      // Print number of leaves
       // int leaves_num = number_of_leaves(r.output);
       // printf("Number of leaves: %i\n", leaves_num);
+
+      // Print number of branches
+      // int branches_num = number_of_branches(r.output);
+      // printf("Number of branches: %i\n", branches_num);
+
+      // Print evaluation result
       // long result = eval(r.output);
       // printf("%li\n", result);
+
+      // Delete AST
       mpc_ast_delete(r.output);
     } else {
       // Otherwise print error
@@ -104,6 +117,23 @@ int number_of_leaves(mpc_ast_t *t) {
     int total = 0;
     for (int i = 0; i < t->children_num; i++) {
       total += number_of_leaves(t->children[i]);
+    }
+    return total;
+  }
+  return 0;
+}
+
+int number_of_branches(mpc_ast_t *t) {
+  if (t->children_num == 0) {
+    if (strstr(t->tag, "operator")) {
+      printf("Cuurent tag: %s\n", t->tag);
+      return 1;
+    }
+  }
+  if (t->children_num >= 1) {
+    int total = 0;
+    for (int i = 0; i < t->children_num; i++) {
+      total += number_of_branches(t->children[i]);
     }
     return total;
   }
