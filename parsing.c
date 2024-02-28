@@ -32,28 +32,32 @@ void add_history(char *unused) {}
 typedef struct {
   int type;
   long num;
-  int err;
+  char *err;
+  char *sym;
+  int count;
+  struct lval **cell;
 } lval;
 
 // Enum of Possible lval types
-enum { LVAL_NUM, LVAL_ERR };
+enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
 
 // Enum of possible err types
 enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
 
 // lval number constructor
-lval lval_num(long x) {
-  lval v;
-  v.type = LVAL_NUM;
-  v.num = x;
+lval *lval_num(long x) {
+  lval *v = malloc(sizeof(lval));
+  v->type = LVAL_NUM;
+  v->num = x;
   return v;
 }
 
 // lval err constructor
-lval lval_err(int x) {
-  lval v;
-  v.type = LVAL_ERR;
-  v.err = x;
+lval *lval_err(char *m) {
+  lval *v = malloc(sizeof(lval));
+  v->type = LVAL_ERR;
+  v->err = malloc(strlen(m) + 1);
+  strcpy(v->err, m);
   return v;
 }
 
@@ -93,18 +97,20 @@ lval eval_op(lval x, char *op, lval y);
 int main(int argc, char **argv) {
   // Parsers
   mpc_parser_t *Number = mpc_new("number");
-  mpc_parser_t *Operator = mpc_new("operator");
+  mpc_parser_t *Symbol = mpc_new("symbol");
+  mpc_parser_t *Sexpr = mpc_new("sexpr");
   mpc_parser_t *Expr = mpc_new("expr");
   mpc_parser_t *Lispy = mpc_new("lispy");
 
   // Parsers definition
   mpca_lang(MPCA_LANG_DEFAULT, "                                    \
 number : /-?[0-9]+/ ;                             \
-operator : '+' | '-' | '*' | '/' | '%' | '^';               \
-expr : <number> | '(' <operator> <expr>+ ')' ;   \
-lispy : /^/ <operator> <expr>+ /$/ ;             \
+symbol : '+' | '-' | '*' | '/' | '%' | '^';               \
+sexpr : '(' <expr>* ')';               \
+expr : <number> | <symbol> | <sexpr> ;   \
+lispy : /^/ <expr>* /$/ ;             \
                                ",
-            Number, Operator, Expr, Lispy);
+            Number, Symbol, Sexpr, Expr, Lispy);
 
   puts("Lispy Version 0.0.1\n");
   puts("Press Ctrl+c to Exit\n");
@@ -148,7 +154,7 @@ lispy : /^/ <operator> <expr>+ /$/ ;             \
   }
 
   // Delete language
-  mpc_cleanup(4, Number, Operator, Expr, Lispy);
+  mpc_cleanup(5, Number, Symbol, Sexpr, Expr, Lispy);
   return 0;
 }
 
